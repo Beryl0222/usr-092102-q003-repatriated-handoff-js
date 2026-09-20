@@ -1,0 +1,9 @@
+{
+  "event_id": "092102-003-sample-001",
+  "event_type": "BATCH_RECEIVED",
+  "aggregate_type": "return_batch",
+  "aggregate_id": "repatriated_collection_handoff-001",
+  "occurred_at": "2026-09-20T12:00:00+08:00",
+  "version": 1,
+  "summary": "返还文物入藏交接领域样例"
+}
