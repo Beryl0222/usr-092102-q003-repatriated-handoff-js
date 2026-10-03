@@ -1,9 +1,34 @@
 {
-  "event_id": "092102-003-sample-001",
+  "event_id": "evt-wa-batch-001",
   "event_type": "BATCH_RECEIVED",
   "aggregate_type": "return_batch",
-  "aggregate_id": "repatriated_collection_handoff-001",
-  "occurred_at": "2026-09-20T12:00:00+08:00",
+  "aggregate_id": "batch-wa-2026-09",
+  "occurred_at": "2026-09-11T10:00:00Z",
   "version": 1,
-  "summary": "返还文物入藏交接领域样例"
+  "summary": "接收华盛顿移交批次 WA-2026-038（共 38 件套）",
+  "request_id": "sample-cmd-001",
+  "correlation_id": "repatriation-2026-us",
+  "payload": {
+    "batch_no": "WA-2026-038",
+    "source_city": "washington",
+    "handover_party": "美国国土安全调查处（HSI）",
+    "receiving_party": "国家文物返还协调组",
+    "handover_location": "中国驻美使馆",
+    "handover_at": "2026-09-11T10:00:00Z",
+    "legal_basis": {
+      "basis_type": "court_order",
+      "reference": "US-DC-CR-2026-038",
+      "issued_at": "2026-09-05T09:00:00Z"
+    },
+    "manifest": [
+      {
+        "line_no": "w-03",
+        "seizure_no": "W-SEIZ-2026-003",
+        "declared_name": "天龙山石窟石雕造像构件（一套）",
+        "declared_quantity": 1,
+        "unit": "套",
+        "package_nos": ["CASE-WA-01"]
+      }
+    ]
+  }
 }

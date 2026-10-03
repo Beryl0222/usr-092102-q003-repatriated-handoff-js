@@ -1,9 +1,9 @@
 {
   "name": "repatriated-collection-handoff",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "领域事件基础校验",
+  "description": "返还文物入藏交接：领域事件契约、聚合与保管责任链后端",
   "scripts": {
     "test": "node --test"
   }

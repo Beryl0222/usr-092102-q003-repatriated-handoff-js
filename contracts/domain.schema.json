@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "返还文物入藏交接领域事件",
+  "description": "美方移交批次、封签箱件、对象候选身份、状态检测、运输环境、保管责任与入藏决定共用的事件信封。aggregate_id/version 标识同一聚合流上的顺序版本；跨编号体系的映射通过载荷中的 *_no / *_ref 字段保留。",
   "type": "object",
   "required": [
     "event_id",
@@ -17,23 +18,10 @@
       "minLength": 1
     },
     "event_type": {
-      "type": "string",
-      "enum": [
-        "BATCH_RECEIVED",
-        "SEAL_INSPECTED",
-        "IDENTITY_PROPOSED",
-        "CUSTODY_TRANSFERRED",
-        "ACCESSION_CONFIRMED"
-      ]
+      "$ref": "#/$defs/eventType"
     },
     "aggregate_type": {
-      "type": "string",
-      "enum": [
-        "return_batch",
-        "sealed_package",
-        "collection_object",
-        "custody_acceptance"
-      ]
+      "$ref": "#/$defs/aggregateType"
     },
     "aggregate_id": {
       "type": "string",
@@ -45,12 +33,1005 @@
     },
     "version": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "description": "该事件在所属聚合流上的版本号，从 1 起单调递增。"
     },
     "summary": {
       "type": "string",
       "minLength": 1
+    },
+    "payload": {
+      "type": "object",
+      "description": "事件业务载荷，形状由 event_type 决定，见各 $defs/payload:*。"
+    },
+    "request_id": {
+      "type": "string",
+      "description": "命令幂等键：离线扫码补传、重复报关消息等重放场景下，同一 request_id 只生效一次。"
+    },
+    "causation_id": {
+      "type": "string",
+      "description": "触发本事件的上游事件或命令标识。"
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "贯穿一次业务流程（如一次跨国返还）的关联标识。"
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": { "required": ["event_type"], "properties": { "event_type": { "$ref": "#/$defs/eventType" } } },
+      "then": { "required": ["payload"] }
+    },
+    { "$ref": "#/$defs/payload:BATCH_RECEIVED" },
+    { "$ref": "#/$defs/payload:MANIFEST_AMENDED" },
+    { "$ref": "#/$defs/payload:CUSTOMS_MESSAGE_RECEIVED" },
+    { "$ref": "#/$defs/payload:PACKAGE_REGISTERED" },
+    { "$ref": "#/$defs/payload:SEAL_INSPECTED" },
+    { "$ref": "#/$defs/payload:PACKAGE_FROZEN" },
+    { "$ref": "#/$defs/payload:PACKAGE_RELEASED" },
+    { "$ref": "#/$defs/payload:PACKAGE_UNPACKED" },
+    { "$ref": "#/$defs/payload:TRANSPORT_ENVIRONMENT_RECORDED" },
+    { "$ref": "#/$defs/payload:OBJECT_REGISTERED" },
+    { "$ref": "#/$defs/payload:OBJECT_SPLIT" },
+    { "$ref": "#/$defs/payload:OBJECT_MERGED" },
+    { "$ref": "#/$defs/payload:IDENTITY_PROPOSED" },
+    { "$ref": "#/$defs/payload:IDENTITY_ASSESSED" },
+    { "$ref": "#/$defs/payload:IDENTITY_CONFIRMED" },
+    { "$ref": "#/$defs/payload:IDENTITY_REVISED" },
+    { "$ref": "#/$defs/payload:MATCH_CLAIMED" },
+    { "$ref": "#/$defs/payload:MATCH_REVIEWED" },
+    { "$ref": "#/$defs/payload:OBJECT_JOINED" },
+    { "$ref": "#/$defs/payload:EXAMINATION_RECORDED" },
+    { "$ref": "#/$defs/payload:TREATMENT_RECORDED" },
+    { "$ref": "#/$defs/payload:DISPUTE_RAISED" },
+    { "$ref": "#/$defs/payload:DISPUTE_RESOLVED" },
+    { "$ref": "#/$defs/payload:ACCEPTANCE_DRAFTED" },
+    { "$ref": "#/$defs/payload:ACCEPTANCE_SIGNED" },
+    { "$ref": "#/$defs/payload:ACCEPTANCE_EFFECTIVE" },
+    { "$ref": "#/$defs/payload:CUSTODY_SCAN_RECORDED" },
+    { "$ref": "#/$defs/payload:CUSTODY_TRANSFERRED" },
+    { "$ref": "#/$defs/payload:ACCESSION_PROPOSED" },
+    { "$ref": "#/$defs/payload:ACCESSION_CONFIRMED" },
+    { "$ref": "#/$defs/payload:PUBLICATION_ISSUED" }
+  ],
+  "$defs": {
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "BATCH_RECEIVED",
+        "MANIFEST_AMENDED",
+        "CUSTOMS_MESSAGE_RECEIVED",
+        "PACKAGE_REGISTERED",
+        "SEAL_INSPECTED",
+        "PACKAGE_FROZEN",
+        "PACKAGE_RELEASED",
+        "PACKAGE_UNPACKED",
+        "TRANSPORT_ENVIRONMENT_RECORDED",
+        "OBJECT_REGISTERED",
+        "OBJECT_SPLIT",
+        "OBJECT_MERGED",
+        "IDENTITY_PROPOSED",
+        "IDENTITY_ASSESSED",
+        "IDENTITY_CONFIRMED",
+        "IDENTITY_REVISED",
+        "MATCH_CLAIMED",
+        "MATCH_REVIEWED",
+        "OBJECT_JOINED",
+        "EXAMINATION_RECORDED",
+        "TREATMENT_RECORDED",
+        "DISPUTE_RAISED",
+        "DISPUTE_RESOLVED",
+        "ACCEPTANCE_DRAFTED",
+        "ACCEPTANCE_SIGNED",
+        "ACCEPTANCE_EFFECTIVE",
+        "CUSTODY_SCAN_RECORDED",
+        "CUSTODY_TRANSFERRED",
+        "ACCESSION_PROPOSED",
+        "ACCESSION_CONFIRMED",
+        "PUBLICATION_ISSUED"
+      ]
+    },
+    "aggregateType": {
+      "type": "string",
+      "enum": [
+        "return_batch",
+        "sealed_package",
+        "collection_object",
+        "custody_acceptance",
+        "identity_match",
+        "publication_release"
+      ]
+    },
+    "objectKind": {
+      "type": "string",
+      "enum": ["statue", "figurine", "dinosaur_skeleton", "egg_fossil"],
+      "description": "造像、陶俑、恐龙骨架、蛋化石；前两者走文物鉴定保护流程，后两者走古生物化石流程。"
+    },
+    "manifestLine": {
+      "type": "object",
+      "required": ["line_no", "seizure_no", "declared_name", "declared_quantity", "unit"],
+      "properties": {
+        "line_no": { "type": "string", "description": "交接清单行号（美方清单体系）。" },
+        "seizure_no": { "type": "string", "description": "执法扣押号（执法编号体系）。" },
+        "declared_name": { "type": "string" },
+        "declared_quantity": { "type": "number" },
+        "unit": { "type": "string", "enum": ["件", "套"] },
+        "package_nos": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "装箱箱号；装箱件数与清单数量通过此处核对。"
+        }
+      },
+      "additionalProperties": true
+    },
+    "legalBasis": {
+      "type": "object",
+      "required": ["basis_type", "reference"],
+      "properties": {
+        "basis_type": {
+          "type": "string",
+          "enum": ["bilateral_agreement", "court_order", "customs_forfeiture", "voluntary_return"]
+        },
+        "reference": { "type": "string", "description": "协议/判决/扣押文书编号。" },
+        "issued_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": true
+    },
+    "ifEvent": {
+      "type": "object",
+      "properties": {
+        "event_type": { "type": "string" }
+      }
+    },
+    "payloadConstraint": {
+      "type": "object",
+      "properties": {
+        "payload": { "type": "object" }
+      }
+    },
+    "payload:BATCH_RECEIVED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "BATCH_RECEIVED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "return_batch" },
+              "payload": {
+                "type": "object",
+                "required": ["batch_no", "source_city", "handover_party", "legal_basis", "handover_at", "manifest"],
+                "properties": {
+                  "batch_no": { "type": "string" },
+                  "source_city": { "type": "string", "enum": ["washington", "new_york"] },
+                  "handover_party": { "type": "string", "description": "移交方机构，如 HSI/曼哈顿地区检察官办公室。" },
+                  "receiving_party": { "type": "string" },
+                  "legal_basis": { "$ref": "#/$defs/legalBasis" },
+                  "handover_location": { "type": "string" },
+                  "handover_at": { "type": "string", "format": "date-time" },
+                  "manifest": { "type": "array", "items": { "$ref": "#/$defs/manifestLine" } }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:MANIFEST_AMENDED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "MANIFEST_AMENDED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "return_batch" },
+              "payload": {
+                "type": "object",
+                "required": ["reason", "lines"],
+                "properties": {
+                  "reason": { "type": "string" },
+                  "lines": { "type": "array", "items": { "$ref": "#/$defs/manifestLine" } },
+                  "amended_by": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:CUSTOMS_MESSAGE_RECEIVED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "CUSTOMS_MESSAGE_RECEIVED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "return_batch" },
+              "payload": {
+                "type": "object",
+                "required": ["customs_message_id", "received_at"],
+                "properties": {
+                  "customs_message_id": { "type": "string", "description": "报关消息号；重复消息只登记一次，绝不产生第二次占有变更。" },
+                  "received_at": { "type": "string", "format": "date-time" },
+                  "manifest_line_nos": { "type": "array", "items": { "type": "string" } }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:PACKAGE_REGISTERED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "PACKAGE_REGISTERED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "sealed_package" },
+              "payload": {
+                "type": "object",
+                "required": ["package_no", "batch_id", "manifest_line_nos", "seals"],
+                "properties": {
+                  "package_no": { "type": "string" },
+                  "batch_id": { "type": "string" },
+                  "manifest_line_nos": { "type": "array", "items": { "type": "string" } },
+                  "seals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["seal_no", "seal_type"],
+                      "properties": {
+                        "seal_no": { "type": "string" },
+                        "seal_type": { "type": "string" }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "gross_weight_kg": { "type": "number" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:SEAL_INSPECTED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "SEAL_INSPECTED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "sealed_package" },
+              "payload": {
+                "type": "object",
+                "required": ["inspected_at", "inspector", "results"],
+                "properties": {
+                  "inspected_at": { "type": "string", "format": "date-time" },
+                  "inspector": { "type": "string" },
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["seal_no", "result"],
+                      "properties": {
+                        "seal_no": { "type": "string" },
+                        "result": {
+                          "type": "string",
+                          "enum": ["intact", "broken", "missing", "tampered", "number_mismatch"]
+                        },
+                        "note": { "type": "string" },
+                        "evidence_ref": { "type": "string" }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:PACKAGE_FROZEN": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "PACKAGE_FROZEN" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "sealed_package" },
+              "payload": {
+                "type": "object",
+                "required": ["reason", "frozen_by", "frozen_at"],
+                "properties": {
+                  "reason": { "type": "string" },
+                  "frozen_by": { "type": "string" },
+                  "frozen_at": { "type": "string", "format": "date-time" },
+                  "affected_seal_nos": { "type": "array", "items": { "type": "string" } }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:PACKAGE_RELEASED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "PACKAGE_RELEASED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "sealed_package" },
+              "payload": {
+                "type": "object",
+                "required": ["resolution_note", "reviewed_by", "released_at"],
+                "properties": {
+                  "resolution_note": { "type": "string" },
+                  "reviewed_by": { "type": "string" },
+                  "released_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:PACKAGE_UNPACKED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "PACKAGE_UNPACKED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "sealed_package" },
+              "payload": {
+                "type": "object",
+                "required": ["unpacked_at", "unpacked_by"],
+                "properties": {
+                  "unpacked_at": { "type": "string", "format": "date-time" },
+                  "unpacked_by": { "type": "string" },
+                  "note": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:TRANSPORT_ENVIRONMENT_RECORDED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "TRANSPORT_ENVIRONMENT_RECORDED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "sealed_package" },
+              "payload": {
+                "type": "object",
+                "required": ["leg_from", "leg_to", "recorded_at", "readings"],
+                "properties": {
+                  "leg_from": { "type": "string" },
+                  "leg_to": { "type": "string" },
+                  "recorded_at": { "type": "string", "format": "date-time" },
+                  "offline_backfill": { "type": "boolean", "description": "是否为运输结束后补传的读数。" },
+                  "readings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["metric", "value", "observed_at"],
+                      "properties": {
+                        "metric": { "type": "string", "enum": ["temp_c", "humidity_rh", "shock_g", "tilt_deg"] },
+                        "value": { "type": "number" },
+                        "observed_at": { "type": "string", "format": "date-time" }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:OBJECT_REGISTERED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "OBJECT_REGISTERED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["object_no", "batch_id", "package_id", "manifest_line_no", "object_kind", "provisional_name"],
+                "properties": {
+                  "object_no": { "type": "string", "description": "国内保管单元编号；与扣押号/清单行号通过映射字段并存。" },
+                  "batch_id": { "type": "string" },
+                  "package_id": { "type": "string" },
+                  "manifest_line_no": { "type": "string" },
+                  "seizure_no": { "type": "string" },
+                  "object_kind": { "$ref": "#/$defs/objectKind" },
+                  "provisional_name": { "type": "string" },
+                  "split_from_object_id": { "type": "string", "description": "拆套来源对象；拆套后原清单映射不丢失。" },
+                  "merged_from_object_ids": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "并套来源对象列表。"
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:OBJECT_SPLIT": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "OBJECT_SPLIT" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["reason", "child_object_ids"],
+                "properties": {
+                  "reason": { "type": "string", "description": "如开箱后发现“一套”实为多个可独立保管单元。" },
+                  "child_object_ids": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+                  "split_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:OBJECT_MERGED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "OBJECT_MERGED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["reason", "source_object_ids", "resulting_object_id"],
+                "properties": {
+                  "reason": { "type": "string" },
+                  "source_object_ids": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+                  "resulting_object_id": { "type": "string" },
+                  "merged_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:IDENTITY_PROPOSED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "IDENTITY_PROPOSED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["candidate_id", "proposed_name", "proposed_by", "proposed_at"],
+                "properties": {
+                  "candidate_id": { "type": "string" },
+                  "proposed_name": { "type": "string" },
+                  "period": { "type": "string" },
+                  "attribution": {
+                    "type": "object",
+                    "properties": {
+                      "site": { "type": "string", "description": "如 天龙山石窟。" },
+                      "cave": { "type": "string", "description": "如 第17窟。" },
+                      "component": { "type": "string", "description": "残件部位，如 佛首/佛手/胁侍菩萨身躯。" }
+                    },
+                    "additionalProperties": true
+                  },
+                  "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+                  "evidence_refs": { "type": "array", "items": { "type": "string" } },
+                  "proposed_by": { "type": "string" },
+                  "proposed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:IDENTITY_ASSESSED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "IDENTITY_ASSESSED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["candidate_id", "workflow_profile", "finding", "assessed_by", "assessed_at"],
+                "properties": {
+                  "candidate_id": { "type": "string" },
+                  "workflow_profile": {
+                    "type": "string",
+                    "enum": ["cultural_relic", "paleontological"],
+                    "description": "造像/陶俑走文物鉴定，恐龙骨架/蛋化石走古生物鉴定。"
+                  },
+                  "finding": { "type": "string", "enum": ["support", "doubt", "inconclusive"] },
+                  "opinion": { "type": "string" },
+                  "report_ref": { "type": "string" },
+                  "assessed_by": { "type": "string" },
+                  "assessed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:IDENTITY_CONFIRMED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "IDENTITY_CONFIRMED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["candidate_id", "confirmed_name", "confirmed_by", "confirmed_at"],
+                "properties": {
+                  "candidate_id": { "type": "string" },
+                  "confirmed_name": { "type": "string" },
+                  "attribution": { "type": "object" },
+                  "confirmed_by": { "type": "string" },
+                  "confirmed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:IDENTITY_REVISED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "IDENTITY_REVISED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["previous_name", "revised_name", "reason", "revised_by", "revised_at"],
+                "properties": {
+                  "previous_name": { "type": "string", "description": "修订前名称；历史名称链全部保留。" },
+                  "revised_name": { "type": "string" },
+                  "reason": { "type": "string" },
+                  "revised_by": { "type": "string" },
+                  "revised_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:MATCH_CLAIMED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "MATCH_CLAIMED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "identity_match" },
+              "payload": {
+                "type": "object",
+                "required": ["match_no", "object_ids", "relation", "hypothesis", "claimed_by", "claimed_at"],
+                "properties": {
+                  "match_no": { "type": "string" },
+                  "object_ids": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+                  "relation": { "type": "string", "enum": ["same_original_work", "same_skeleton", "same_clutch"], "description": "同躯造像、同一具恐龙骨架、同一窝蛋。" },
+                  "hypothesis": { "type": "string", "description": "如：两件残件均为天龙山第17窟某造像构件。" },
+                  "evidence_refs": { "type": "array", "items": { "type": "string" } },
+                  "claimed_by": { "type": "string" },
+                  "claimed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:MATCH_REVIEWED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "MATCH_REVIEWED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "identity_match" },
+              "payload": {
+                "type": "object",
+                "required": ["decision", "panel_ref", "reviewed_at"],
+                "properties": {
+                  "decision": { "type": "string", "enum": ["approved", "rejected", "needs_more_evidence"] },
+                  "panel_ref": { "type": "string" },
+                  "panel_members": { "type": "array", "items": { "type": "string" } },
+                  "opinion": { "type": "string" },
+                  "reviewed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:OBJECT_JOINED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "OBJECT_JOINED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["match_id", "object_ids", "joined_at", "joined_by"],
+                "properties": {
+                  "match_id": { "type": "string", "description": "必须引用会审 approved 的匹配主张；未经会审不得拼合。" },
+                  "object_ids": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+                  "resulting_object_id": { "type": "string" },
+                  "joined_at": { "type": "string", "format": "date-time" },
+                  "joined_by": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:EXAMINATION_RECORDED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "EXAMINATION_RECORDED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["examination_no", "workflow_profile", "examination_type", "examiner", "examined_at"],
+                "properties": {
+                  "examination_no": { "type": "string" },
+                  "workflow_profile": { "type": "string", "enum": ["cultural_relic", "paleontological"] },
+                  "examination_type": {
+                    "type": "string",
+                    "description": "cultural_relic: stylistic_comparison/material_analysis/polychromy_examination/ceramic_body_analysis；paleontological: morphological_id/histological_section/cathodoluminescence/clutch_context。"
+                  },
+                  "methods": { "type": "array", "items": { "type": "string" } },
+                  "findings": { "type": "string" },
+                  "condition_rating": { "type": "string", "enum": ["good", "fair", "poor", "critical"] },
+                  "report_ref": { "type": "string" },
+                  "examiner": { "type": "string" },
+                  "examined_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:TREATMENT_RECORDED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "TREATMENT_RECORDED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["treatment_no", "workflow_profile", "treatment_type", "conservator", "treated_at"],
+                "properties": {
+                  "treatment_no": { "type": "string" },
+                  "workflow_profile": { "type": "string", "enum": ["cultural_relic", "paleontological"] },
+                  "treatment_type": {
+                    "type": "string",
+                    "description": "cultural_relic: cleaning/desalination/consolidation/restoration；paleontological: matrix_consolidation/crack_repair/support_mounting/stabilization。"
+                  },
+                  "materials": { "type": "array", "items": { "type": "string" } },
+                  "result": { "type": "string" },
+                  "conservator": { "type": "string" },
+                  "treated_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:DISPUTE_RAISED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "DISPUTE_RAISED" } }, "required": ["event_type"] },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["dispute_no", "category", "description", "raised_by", "raised_at"],
+                "properties": {
+                  "dispute_no": { "type": "string" },
+                  "category": { "type": "string", "enum": ["identity", "condition", "custody", "attribution"] },
+                  "description": { "type": "string" },
+                  "raised_by": { "type": "string" },
+                  "raised_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:DISPUTE_RESOLVED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "DISPUTE_RESOLVED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["dispute_no", "resolution", "resolved_by", "resolved_at"],
+                "properties": {
+                  "dispute_no": { "type": "string" },
+                  "resolution": { "type": "string" },
+                  "resolved_by": { "type": "string" },
+                  "resolved_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:ACCEPTANCE_DRAFTED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "ACCEPTANCE_DRAFTED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "custody_acceptance" },
+              "payload": {
+                "type": "object",
+                "required": ["acceptance_no", "batch_id", "handover_party", "receiving_party", "item_refs", "drafted_at"],
+                "properties": {
+                  "acceptance_no": { "type": "string" },
+                  "batch_id": { "type": "string" },
+                  "handover_party": { "type": "string" },
+                  "receiving_party": { "type": "string" },
+                  "item_refs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["scope_type", "scope_id"],
+                      "properties": {
+                        "scope_type": { "type": "string", "enum": ["sealed_package", "collection_object"] },
+                        "scope_id": { "type": "string" },
+                        "manifest_line_no": { "type": "string" }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "drafted_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:ACCEPTANCE_SIGNED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "ACCEPTANCE_SIGNED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "custody_acceptance" },
+              "payload": {
+                "type": "object",
+                "required": ["party", "signatory", "signed_at"],
+                "properties": {
+                  "party": { "type": "string", "enum": ["handover", "receiving"], "description": "交接双方；两方都签署后交接才生效。" },
+                  "signatory": { "type": "string" },
+                  "signature_ref": { "type": "string" },
+                  "signed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:ACCEPTANCE_EFFECTIVE": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "ACCEPTANCE_EFFECTIVE" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "custody_acceptance" },
+              "payload": {
+                "type": "object",
+                "required": ["effective_at"],
+                "properties": {
+                  "effective_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:CUSTODY_SCAN_RECORDED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "CUSTODY_SCAN_RECORDED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["scan_no", "custodian", "scanned_at"],
+                "properties": {
+                  "scan_no": { "type": "string" },
+                  "custodian": { "type": "string" },
+                  "scanned_at": { "type": "string", "format": "date-time" },
+                  "uploaded_at": { "type": "string", "format": "date-time", "description": "补传时间；离线扫码允许晚于 scanned_at。" },
+                  "offline": { "type": "boolean" },
+                  "location": { "type": "string" },
+                  "note": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:CUSTODY_TRANSFERRED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "CUSTODY_TRANSFERRED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "type": "string", "enum": ["collection_object", "sealed_package"] },
+              "payload": {
+                "type": "object",
+                "required": ["acceptance_id", "from_custodian", "to_custodian", "transferred_at"],
+                "properties": {
+                  "acceptance_id": { "type": "string", "description": "必须引用已双方签署生效的交接单。" },
+                  "from_custodian": { "type": "string" },
+                  "to_custodian": { "type": "string" },
+                  "transferred_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:ACCESSION_PROPOSED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "ACCESSION_PROPOSED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["proposed_institution", "proposed_by", "proposed_at"],
+                "properties": {
+                  "proposed_institution": { "type": "string", "description": "国内拟接收机构。" },
+                  "proposed_by": { "type": "string" },
+                  "proposed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:ACCESSION_CONFIRMED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "ACCESSION_CONFIRMED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "collection_object" },
+              "payload": {
+                "type": "object",
+                "required": ["accession_no", "institution", "registered_name", "confirmed_at"],
+                "properties": {
+                  "accession_no": { "type": "string" },
+                  "institution": { "type": "string" },
+                  "registered_name": { "type": "string" },
+                  "confirmed_at": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload:PUBLICATION_ISSUED": {
+      "allOf": [
+        {
+          "if": { "properties": { "event_type": { "const": "PUBLICATION_ISSUED" } },
+            "required": ["event_type"]
+          },
+          "then": {
+            "properties": {
+              "aggregate_type": { "const": "publication_release" },
+              "payload": {
+                "type": "object",
+                "required": ["release_no", "issued_at", "object_ids"],
+                "properties": {
+                  "release_no": { "type": "string" },
+                  "issued_at": { "type": "string", "format": "date-time" },
+                  "object_ids": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "仅限身份已确认、已入藏的对象；疑似信息不得进入公开发布。"
+                  },
+                  "title": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
 }
